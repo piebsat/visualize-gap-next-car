@@ -41,6 +41,7 @@ def compute_gap_by_position(session, driver):
             gap = 0.0
             ahead_driver = None
         else:
+            # find car ahead
             same_lap = laps[laps['LapNumber'] == lap_num]
             ahead = same_lap[same_lap['Position'] == position - 1]
 
@@ -92,10 +93,6 @@ def compute_gap_on_track(session, driver):
 
     return pd.DataFrame(rows)
 
-
-# -------------------------
-# UI
-# -------------------------
 st.title("🏎️ Gap to Car Ahead Visualizer")
 
 year = st.selectbox("Year", list(range(2018, CURRENT_YEAR + 1))[::-1])
@@ -114,9 +111,8 @@ event_names = {
 event_label = st.selectbox("Event", list(event_names.keys()))
 event_round = event_names[event_label]
 
-session_type = st.selectbox("Session", ["R", "S"])  # Race or Sprint
-
-@st.cache_data
+session_type = st.selectbox("Session", ["R", "S"]) 
+@st.cache_resource(show_spinner=False)
 def load_session(year, rnd, session_type):
     session = fastf1.get_session(year, rnd, session_type)
     session.load()
@@ -144,10 +140,10 @@ if st.session_state.session_obj is not None and st.session_state.session_key == 
         ["By race position", "Actual car ahead (on-track)"],
         help=(
             "By race position: gap to whoever currently holds the position ahead, "
-            "based on race classification.\n\n"
+            "based on classification — can jump around pit stops.\n\n"
             "Actual car ahead (on-track): gap to whoever is physically ahead on track, "
             "computed from telemetry (speed + distance). Includes lapped cars, "
-            "excludes red flags and pit lane. SLOW."
+            "excludes red flags and pit lane. Slower to compute."
         ),
     )
 
@@ -176,7 +172,7 @@ if st.session_state.session_obj is not None and st.session_state.session_key == 
                 x=df["Lap"],
                 y=df["Gap"],
                 mode="lines+markers",
-                line=dict(color="#E10600", width=3), 
+                line=dict(color="#E10600", width=3),  
                 marker=dict(size=5, color="#E10600"),
                 fill="tozeroy",
                 fillcolor="rgba(225, 6, 0, 0.15)",
